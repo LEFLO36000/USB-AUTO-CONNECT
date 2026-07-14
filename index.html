@@ -2,22 +2,36 @@
 <html lang="el">
 <head>
     <meta charset="UTF-8">
-    <title>Dashboard</title>
+    <title>USB Auto-Connect</title>
     <style>
-        body { margin: 0; background-color: #1a1b26; font-family: sans-serif; color: #ffffff; }
-        #main-container { width: 100%; height: 100vh; }
-        #dashboard-frame { width: 100%; height: 100%; border: none; }
-        
-        /* Το κεντρικό μήνυμα για το OFFLINE */
-        #offline-message { 
-            display: none; 
-            text-align: center; 
-            padding-top: 100px; 
-            font-size: 32px; 
-            color: #f7768e; 
-            font-weight: bold;
-        }
-    </style>
+    /* Μηδενίζουμε τα περιθώρια του browser */
+    html, body { 
+        margin: 0; 
+        padding: 0; 
+        width: 100%; 
+        height: 100%; 
+        background-color: #1a1b26; 
+        overflow: hidden; /* Για να μην εμφανίζονται μπάρες κύλισης */
+    }
+
+    /* Αναγκάζουμε το iframe να πιάσει όλο τον χώρο */
+    #server-frame { 
+        width: 100vw; 
+        height: 100vh; 
+        border: none; 
+        display: block; 
+    }
+
+    /* Το μήνυμα "VM OFFLINE" στο κέντρο */
+    #error-msg { 
+        display: none; 
+        color: #f7768e; 
+        font-family: sans-serif; 
+        font-size: 24px; 
+        text-align: center; 
+        padding-top: 20%; 
+    }
+</style>
 </head>
 <body>
 
