@@ -1,52 +1,86 @@
 <!DOCTYPE html>
-<html>
+<html lang="el">
 <head>
     <meta charset="UTF-8">
-    <title>Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Server Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #1a1b26; }
-        
-        #server-frame { 
-            position: fixed; top: 0; left: 0; 
-            width: 100%; height: 100%; 
-            border: none; display: none; 
+        html, body {
+            height: 100%; margin: 0; padding: 0; overflow: hidden;
+            background-color: #0f172a; color: #e2e8f0;
+            font-family: system-ui, sans-serif;
         }
-
-        #offline-msg { 
-            display: flex; justify-content: center; align-items: center;
-            width: 100vw; height: 100vh;
-            color: #f7768e; font-family: monospace; font-size: 32px;
-            font-weight: bold;
+        #app { height: 100vh; width: 100vw; }
+        .offline-screen {
+            height: 100vh; width: 100vw; display: flex; align-items: center; justify-content: center;
+            background: linear-gradient(135deg, #1e2937, #0f172a);
+            color: #f87171; font-size: 7rem; font-weight: 900; flex-direction: column;
         }
     </style>
 </head>
 <body>
+    <div id="app">
+        <!-- Dashboard -->
+        <div id="dashboard" class="hidden flex flex-col h-full">
+            <header class="bg-slate-900 p-6 flex justify-between items-center border-b border-slate-700">
+                <h1 class="text-3xl font-bold">Live Dashboard</h1>
+                <div class="flex items-center gap-3">
+                    <span class="px-4 py-2 bg-emerald-600 rounded-full text-sm font-medium flex items-center gap-2">
+                        <span class="w-3 h-3 bg-white rounded-full animate-pulse"></span>
+                        ONLINE
+                    </span>
+                </div>
+            </header>
+            
+            <div class="flex-1 p-8 overflow-auto bg-slate-950">
+                <!-- Εδώ βάλε το περιεχόμενο του dashboard σου -->
+                <div class="text-center py-20">
+                    <h2 class="text-5xl mb-8">Το Dashboard σου είναι Online ✅</h2>
+                    <p class="text-xl text-slate-400">Πρόσθεσε εδώ τα widgets, γραφήματα κλπ.</p>
+                </div>
+            </div>
+        </div>
 
-    <div id="offline-msg">VM OFFLINE</div>
-    <iframe id="server-frame" src="http://YOUR_TAILSCALE_IP:8080"></iframe>
+        <!-- Offline -->
+        <div id="offline" class="offline-screen">
+            <div>VM OFFLINE</div>
+            <p class="text-3xl mt-8 text-slate-400">Ελέγξτε Tailscale σύνδεση</p>
+            <button onclick="checkStatus()" 
+                    class="mt-12 px-10 py-5 bg-slate-800 hover:bg-slate-700 rounded-2xl text-xl">
+                Δοκίμασε ξανά
+            </button>
+        </div>
+    </div>
 
     <script>
-        const frame = document.getElementById('server-frame');
-        const msg = document.getElementById('offline-msg');
-        const TARGET = 'http://100.127.249.63:8080';
-
-        async function update() {
+        // === ΒΑΛΕ ΕΔΩ ΤΟ TAILSCALE IP ΣΟΥ ===
+        const SERVER_URL = "http://100.127.249.63:8080";   // ← ΑΛΛΑΞΕ ΑΥΤΟ
+        
+        async function checkStatus() {
+            const dashboard = document.getElementById('dashboard');
+            const offline = document.getElementById('offline');
+            
             try {
-                // We fetch the server to check if it's alive
-                await fetch(TARGET, { mode: 'no-cors' });
-                // If we get here, it's alive
-                frame.style.display = 'block';
-                msg.style.display = 'none';
+                const res = await fetch(SERVER_URL, { 
+                    mode: 'no-cors',     // Βοηθάει λίγο
+                    cache: 'no-store',
+                    signal: AbortSignal.timeout(8000)
+                });
+                
+                // Αν δεν πετάξει error, θεωρούμε online
+                offline.classList.add('hidden');
+                dashboard.classList.remove('hidden');
             } catch (e) {
-                // If it fails, show OFFLINE
-                frame.style.display = 'none';
-                msg.style.display = 'flex';
+                console.log("Offline:", e);
+                dashboard.classList.add('hidden');
+                offline.classList.remove('hidden');
             }
         }
 
-        // Check every 1 second
-        setInterval(update, 1000);
-        update();
+        // Αυτόματο refresh κάθε 6 δευτερόλεπτα
+        setInterval(checkStatus, 6000);
+        window.onload = checkStatus;
     </script>
 </body>
 </html>
