@@ -31,44 +31,46 @@
         </button>
     </div>
 
-    <!-- ONLINE - Server Dashboard inside iframe -->
+    <!-- SERVER DASHBOARD -->
     <iframe id="serverFrame" style="display:none;" allowfullscreen></iframe>
 
     <script>
-        // ================== ΑΛΛΑΞΕ ΕΔΩ ==================
-        const SERVER_URL = "http://100.127.249.63:8080";   // ← ΒΑΛΕ ΤΟ TAILSCALE IP + PORT
+        const SERVER_URL = "http://100.127.249.63:8080"; 
         
         async function checkAndLoad() {
             const offline = document.getElementById('offline');
             const frame = document.getElementById('serverFrame');
             
             try {
-                // Test connection
+                // Stronger check
+                const controller = new AbortController();
+                const timeout = setTimeout(() => controller.abort(), 8000);
+                
                 await fetch(SERVER_URL, { 
                     method: 'HEAD',
                     mode: 'no-cors',
-                    signal: AbortSignal.timeout(7000)
+                    signal: controller.signal,
+                    cache: 'no-store'
                 });
+                clearTimeout(timeout);
                 
-                // Αν φτάσει εδώ → Online
+                // ONLINE
                 offline.style.display = 'none';
-                frame.src = SERVER_URL;
+                frame.src = SERVER_URL + "?t=" + Date.now();  // Prevent cache
                 frame.style.display = 'block';
                 
             } catch (err) {
+                // OFFLINE
                 offline.style.display = 'flex';
                 frame.style.display = 'none';
+                frame.src = '';   // Clear iframe completely
             }
         }
 
-        // Αυτόματο retry κάθε 8 δευτερόλεπτα
-        setInterval(() => {
-            if (document.getElementById('serverFrame').style.display === 'none') {
-                checkAndLoad();
-            }
-        }, 8000);
+        // Auto refresh every 7 seconds
+        setInterval(checkAndLoad, 7000);
 
-        // Πρώτη φορά
+        // Initial load
         window.onload = checkAndLoad;
     </script>
 </body>
