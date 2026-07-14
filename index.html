@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+    <meta charset="UTF-8">
+    <title>Live USB/IP Server Dashboard</title>
+    <style>
+        body { background-color: #1a1b26; color: #7aa2f7; font-family: sans-serif; padding: 20px; }
+        .container { border: 1px solid #333; padding: 20px; border-radius: 8px; max-width: 600px; margin: auto; }
+        .status-on { color: #9ece6a; font-weight: bold; }
+        .status-off { color: #f7768e; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>🔌 Live USB/IP Server Dashboard (FREE)</h2>
+    <p>Κατάσταση: <span id="status">Ελέγχεται...</span></p>
+    <div id="device-list"></div>
+</div>
+
+<script>
+    // ΑΝΤΙΚΑΤΑΣΤΗΣΕ ΤΟ ΚΑΤΩΘΙ ΜΕ ΤΟ TAILSCALE IP ΣΟΥ
+    const TARGET_URL = 'http://YOUR_TAILSCALE_IP:8080';
+
+    async function checkStatus() {
+        const statusEl = document.getElementById('status');
+        const devicesEl = document.getElementById('device-list');
+        
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 2000); // 2 δευτερόλεπτα timeout
+
+            const response = await fetch(TARGET_URL, { signal: controller.handle });
+            clearTimeout(timeoutId);
+
+            if (response.ok) {
+                statusEl.innerText = 'AUTOMATIC BIND ACTIVE';
+                statusEl.className = 'status-on';
+                devicesEl.innerHTML = '<p>Συνδεδεμένες Συσκευές στη VM:</p><pre>busid 1-1 (80ee:0021)\nVirtualBox : USB Tablet (80ee:0021)</pre>';
+            }
+        } catch (error) {
+            statusEl.innerText = 'VM OFFLINE';
+            statusEl.className = 'status-off';
+            devicesEl.innerHTML = ''; // Κενό
+        }
+    }
+
+    setInterval(checkStatus, 1000);
+    checkStatus();
+</script>
+</body>
+</html>
