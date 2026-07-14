@@ -3,84 +3,73 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Server Dashboard</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>USB Auto-Connect</title>
     <style>
+        * { margin:0; padding:0; box-sizing:border-box; }
         html, body {
-            height: 100%; margin: 0; padding: 0; overflow: hidden;
-            background-color: #0f172a; color: #e2e8f0;
-            font-family: system-ui, sans-serif;
+            height: 100%; width: 100%; overflow: hidden; background: #0f172a;
         }
-        #app { height: 100vh; width: 100vw; }
-        .offline-screen {
+        #offline {
             height: 100vh; width: 100vw; display: flex; align-items: center; justify-content: center;
-            background: linear-gradient(135deg, #1e2937, #0f172a);
-            color: #f87171; font-size: 7rem; font-weight: 900; flex-direction: column;
+            flex-direction: column; color: #f87171; font-family: system-ui;
+        }
+        #offline h1 { font-size: 6rem; font-weight: 900; }
+        iframe {
+            width: 100%; height: 100%; border: none;
         }
     </style>
 </head>
 <body>
-    <div id="app">
-        <!-- Dashboard -->
-        <div id="dashboard" class="hidden flex flex-col h-full">
-            <header class="bg-slate-900 p-6 flex justify-between items-center border-b border-slate-700">
-                <h1 class="text-3xl font-bold">Live Dashboard</h1>
-                <div class="flex items-center gap-3">
-                    <span class="px-4 py-2 bg-emerald-600 rounded-full text-sm font-medium flex items-center gap-2">
-                        <span class="w-3 h-3 bg-white rounded-full animate-pulse"></span>
-                        ONLINE
-                    </span>
-                </div>
-            </header>
-            
-            <div class="flex-1 p-8 overflow-auto bg-slate-950">
-                <!-- Εδώ βάλε το περιεχόμενο του dashboard σου -->
-                <div class="text-center py-20">
-                    <h2 class="text-5xl mb-8">Το Dashboard σου είναι Online ✅</h2>
-                    <p class="text-xl text-slate-400">Πρόσθεσε εδώ τα widgets, γραφήματα κλπ.</p>
-                </div>
-            </div>
-        </div>
 
-        <!-- Offline -->
-        <div id="offline" class="offline-screen">
-            <div>VM OFFLINE</div>
-            <p class="text-3xl mt-8 text-slate-400">Ελέγξτε Tailscale σύνδεση</p>
-            <button onclick="checkStatus()" 
-                    class="mt-12 px-10 py-5 bg-slate-800 hover:bg-slate-700 rounded-2xl text-xl">
-                Δοκίμασε ξανά
-            </button>
-        </div>
+    <!-- OFFLINE SCREEN -->
+    <div id="offline">
+        <h1>VM OFFLINE</h1>
+        <p style="font-size:1.5rem; margin-top:20px;">Ο server δεν είναι προσβάσιμος</p>
+        <button onclick="checkAndLoad()" 
+                style="margin-top:40px; padding:15px 40px; font-size:1.2rem; background:#334155; color:white; border:none; border-radius:12px; cursor:pointer;">
+            Δοκίμασε Ξανά
+        </button>
     </div>
 
+    <!-- ONLINE - Server Dashboard inside iframe -->
+    <iframe id="serverFrame" style="display:none;" allowfullscreen></iframe>
+
     <script>
-        // === ΒΑΛΕ ΕΔΩ ΤΟ TAILSCALE IP ΣΟΥ ===
-        const SERVER_URL = "http://100.127.249.63:8080";   // ← ΑΛΛΑΞΕ ΑΥΤΟ
+        // ================== ΑΛΛΑΞΕ ΕΔΩ ==================
+        const SERVER_URL = "http://100.127.249.63:8080";   // ← ΒΑΛΕ ΤΟ TAILSCALE IP + PORT
         
-        async function checkStatus() {
-            const dashboard = document.getElementById('dashboard');
+        async function checkAndLoad() {
             const offline = document.getElementById('offline');
+            const frame = document.getElementById('serverFrame');
             
             try {
-                const res = await fetch(SERVER_URL, { 
-                    mode: 'no-cors',     // Βοηθάει λίγο
-                    cache: 'no-store',
-                    signal: AbortSignal.timeout(8000)
+                // Test connection
+                await fetch(SERVER_URL, { 
+                    method: 'HEAD',
+                    mode: 'no-cors',
+                    signal: AbortSignal.timeout(7000)
                 });
                 
-                // Αν δεν πετάξει error, θεωρούμε online
-                offline.classList.add('hidden');
-                dashboard.classList.remove('hidden');
-            } catch (e) {
-                console.log("Offline:", e);
-                dashboard.classList.add('hidden');
-                offline.classList.remove('hidden');
+                // Αν φτάσει εδώ → Online
+                offline.style.display = 'none';
+                frame.src = SERVER_URL;
+                frame.style.display = 'block';
+                
+            } catch (err) {
+                offline.style.display = 'flex';
+                frame.style.display = 'none';
             }
         }
 
-        // Αυτόματο refresh κάθε 6 δευτερόλεπτα
-        setInterval(checkStatus, 6000);
-        window.onload = checkStatus;
+        // Αυτόματο retry κάθε 8 δευτερόλεπτα
+        setInterval(() => {
+            if (document.getElementById('serverFrame').style.display === 'none') {
+                checkAndLoad();
+            }
+        }, 8000);
+
+        // Πρώτη φορά
+        window.onload = checkAndLoad;
     </script>
 </body>
 </html>
