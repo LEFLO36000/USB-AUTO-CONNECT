@@ -1,120 +1,52 @@
 <!DOCTYPE html>
-<html lang="el">
+<html>
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>USB Auto-Connect</title>
+    <title>Dashboard</title>
     <style>
-        /* CSS για να γεμίσει η οθόνη και να φαίνεται ακριβώς το ίδιο */
-        body, html {
-            margin: 0;
-            padding: 0;
-            height: 100%;
-            background-color: #1a1b26; /* Το σκούρο φόντο */
-            color: #8ab4f8; /* Το κύριο χρώμα κειμένου (λίγο πιο φωτεινό για καλύτερη ορατότητα) */
-            font-family: monospace;
-            font-size: 16px;
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #1a1b26; }
+        
+        #server-frame { 
+            position: fixed; top: 0; left: 0; 
+            width: 100%; height: 100%; 
+            border: none; display: none; 
         }
 
-        #dashboard-content {
-            display: none; /* Κρυφό στην αρχή μέχρι να γίνει έλεγχος */
-            padding: 30px;
-            max-width: 1200px;
-            margin: 0 auto; /* Κεντράρισμα */
-        }
-
-        .header {
-            color: #81c995; /* Πράσινο του header */
+        #offline-msg { 
+            display: flex; justify-content: center; align-items: center;
+            width: 100vw; height: 100vh;
+            color: #f7768e; font-family: monospace; font-size: 32px;
             font-weight: bold;
-            font-size: 1.4em;
-            margin-bottom: 20px;
-        }
-
-        .status {
-            color: #81c995;
-            margin-bottom: 30px;
-        }
-
-        .status-dot {
-            color: #81c995;
-        }
-
-        .devices-label {
-            margin-bottom: 10px;
-        }
-
-        .device-list {
-            background-color: #202124; /* Το σκούρο πλαίσιο των συσκευών */
-            padding: 20px;
-            border-radius: 4px;
-            white-space: pre; /* Κρατάει τα κενά και τις αλλαγές γραμμής */
-            color: #e8eaed;
-            overflow-x: auto; /* Επιτρέπει scroll αν είναι πολύ μακρύ */
-        }
-
-        .device-id {
-            color: #f28b82; /* Ροζ χρώμα για το ID */
-        }
-
-        /* Στυλ για το μήνυμα VM OFFLINE */
-        #offline-msg {
-            display: none; /* Κρυφό στην αρχή */
-            color: #f28b82; /* Κόκκινο για το OFFLINE */
-            font-size: 3em;
-            font-weight: bold;
-            text-align: center;
-            padding-top: 150px;
         }
     </style>
 </head>
 <body>
 
-    <!-- Μήνυμα που εμφανίζεται όταν ο server είναι offline -->
     <div id="offline-msg">VM OFFLINE</div>
-
-    <!-- Το κυρίως dashboard που εμφανίζεται όταν ο server είναι online -->
-    <div id="dashboard-content">
-        <div class="header">🔌 Live USB/IP Server Dashboard (FREE)</div>
-        <div class="status">Κατάσταση: <span class="status-dot">●</span> AUTOMATIC BIND ACTIVE</div>
-        <div class="devices-label">Συνδεδεμένες Συσκευές στη VM (Έτοιμες για χρήση):</div>
-        <div class="device-list">
-- busid <span class="device-id">1-1 (80ee:0021)</span>
-  VirtualBox : USB <span class="device-id">Tablet (80ee:0021)</span>
-        </div>
-    </div>
+    <iframe id="server-frame" src="http://YOUR_TAILSCALE_IP:8080"></iframe>
 
     <script>
-        // --- ΡΥΘΜΙΣΕΙΣ ---
-        // ΑΛΛΑΞΕ ΤΟ ΠΑΡΑΚΑΤΩ ΜΕ ΤΗΝ ΠΡΑΓΜΑΤΙΚΗ TAILSCALE IP ΣΟΥ
-        const TAILSCALE_IP = 'http://100.127.249.63:8080';
-        // -----------------
+        const frame = document.getElementById('server-frame');
+        const msg = document.getElementById('offline-msg');
+        const TARGET = 'http://100.127.249.63:8080';
 
-        const contentDiv = document.getElementById('dashboard-content');
-        const offlineMsg = document.getElementById('offline-msg');
-
-        async function checkServer() {
+        async function update() {
             try {
-                // Προσπάθεια να συνδεθούμε στο τοπικό μας μηχάνημα μέσω του Tailscale IP
-                // Χρησιμοποιούμε mode: 'no-cors' επειδή το GitPages είναι HTTPS και τοπικά HTTP
-                const response = await fetch(TAILSCALE_IP, { mode: 'no-cors', cache: 'no-cache' });
-                
-                // Αν φτάσουμε εδώ, ο browser απαντάει, οπότε ο server είναι Online.
-                // Επειδή το no-cors δεν επιστρέφει status code, υποθέτουμε ότι είναι ΟΚ αν δεν βγάλει error.
-                contentDiv.style.display = 'block';
-                offlineMsg.style.display = 'none';
-            } catch (error) {
-                // Αν βγάλει error, ο server είναι Offline (ή δεν έχουμε σύνδεση στο Tailscale).
-                contentDiv.style.display = 'none';
-                offlineMsg.style.display = 'block';
-                console.error('Σφάλμα σύνδεσης:', error);
+                // We fetch the server to check if it's alive
+                await fetch(TARGET, { mode: 'no-cors' });
+                // If we get here, it's alive
+                frame.style.display = 'block';
+                msg.style.display = 'none';
+            } catch (e) {
+                // If it fails, show OFFLINE
+                frame.style.display = 'none';
+                msg.style.display = 'flex';
             }
         }
 
-        // Εκτέλεση του ελέγχου κάθε 1 δευτερόλεπτο
-        setInterval(checkServer, 1000);
-        // Άμεση εκτέλεση κατά το φόρτωση
-        checkServer();
+        // Check every 1 second
+        setInterval(update, 1000);
+        update();
     </script>
-
 </body>
 </html>
